@@ -1,5 +1,6 @@
 import csv
 import requests
+import pandas as pd
 
 def get_reviews(appid, params={'json':1}):
     url = 'https://store.steampowered.com/appreviews/'
@@ -13,7 +14,9 @@ def get_n_reviews(appid, n):
         'json': 1,
         'filter': 'all',
         'language': 'english',
+        'day_range' : 9223372036854775807,
         'review_type': 'positive',
+        'purchase_type' : 'all'
     }
 
     while n > 0:
@@ -30,22 +33,24 @@ def get_n_reviews(appid, n):
 
     return reviews
 
-n = 200
+n = 300
 
-reviews = []
 ids = open('idList.txt', 'r')
 idTxt = ids.readlines()
 
+# Create a dictionary to store reviews for each app ID
+reviews_dict = {}
+
 for id in idTxt:
-    reviews.extend(get_n_reviews(id, n)) 
+    app_reviews = get_n_reviews(id, n)
+    reviews_dict[id.strip()] = app_reviews
 
-# Output reviews to a CSV file
-filename = 'reviews.csv'
-fieldnames = reviews[0].keys()
+# Save reviews in different sheets of an Excel file
+filename = 'reviews.xlsx'
 
-with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerows(reviews)
+with pd.ExcelWriter(filename) as writer:
+    for app_id, reviews in reviews_dict.items():
+        df = pd.DataFrame(reviews)
+        df.to_excel(writer, sheet_name=app_id, index=False)
 
 print(f"Reviews saved to {filename}")

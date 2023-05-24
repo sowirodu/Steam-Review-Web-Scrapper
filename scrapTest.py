@@ -1,6 +1,7 @@
 import csv
 import requests
 import pandas as pd
+import re
 
 def get_reviews(appid, params={'json':1}):
     url = 'https://store.steampowered.com/appreviews/'
@@ -48,9 +49,21 @@ for id in idTxt:
 # Save reviews in different sheets of an Excel file
 filename = 'reviews.xlsx'
 
+def remove_html_tags(text):
+    clean = re.compile(r'\[.*?\]')
+    text = re.sub(clean, '', text)
+    clean = re.compile('<.*?>')
+    text = re.sub(clean, '', text)
+    text = text.replace('\n', ' ').strip()  # Remove line breaks and extra whitespace
+    text = re.sub(r'\s+', ' ', text)  # Replace multiple whitespaces with a single space
+    return text
+
+# ...
+
 with pd.ExcelWriter(filename) as writer:
     for app_id, reviews in reviews_dict.items():
         df = pd.DataFrame(reviews)
+        df['review'] = df['review'].apply(remove_html_tags)  # Remove HTML tags from 'review' column
         df.to_excel(writer, sheet_name=app_id, index=False)
 
 print(f"Reviews saved to {filename}")
